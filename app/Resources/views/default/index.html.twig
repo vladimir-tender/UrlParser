@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Site image parser</title>
+    <style>
+        .container {
+            display: block;
+            margin: 0 auto;
+        }
+        table td {
+            border: 1px solid gray;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <table cellpadding="7" cellspacing="0">
+            <tr>
+                <th></th>
+                <th>Url</th>
+                <th>Images count</th>
+                <th>Parse time, ms</th>
+            </tr>
+
+        {% for key, link in links %}
+            <tr>
+                <td>{{ key + 1 }}</td>
+                <td>
+                    <a href="{{ link.url }}" target="_blank">
+                    {{ link.url }}
+                    </a>
+                </td>
+                <td>{{ link.imgCount }}</td>
+                <td>{{ link.parseTime }}</td>
+            </tr>
+        {% endfor %}
+        </table>
+    </div>
+</body>
+</html>
