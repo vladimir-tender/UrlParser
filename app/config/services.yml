@@ -29,7 +29,12 @@ services:
         public: true
         tags: ['controller.service_arguments']
 
+    statistic_manager:
+        class: AppBundle\Service\StatisticManager
+        arguments:
+            - "@doctrine.orm.entity_manager"
+
     url_parser:
         class: AppBundle\Service\SiteImagesCountParser
         arguments:
-            - "@doctrine.orm.entity_manager"
+            - "@statistic_manager"

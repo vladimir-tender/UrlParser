@@ -7,10 +7,7 @@ namespace AppBundle\Service;
 
 
 use AppBundle\DTO\LinkSummaryDTO;
-use AppBundle\Entity\Statistic;
 use AppBundle\Types\UrlType;
-use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Debug\Exception\ContextErrorException;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\Stopwatch\Stopwatch;
 
@@ -29,33 +26,38 @@ class SiteImagesCountParser
     private $linksProcessed = [];
 
     /**
-     * @var EntityManagerInterface
-     */
-    private $entityManager;
-
-    /**
      * @var int
      */
     private $maxProcessedLinks;
 
     /**
-     * SiteImagesCountParser constructor.
-     *
-     * @param EntityManagerInterface $entityManager
+     * @var StatisticManager
      */
-    public function __construct(EntityManagerInterface $entityManager)
-    {
-        $this->entityManager = $entityManager;
-    }
+    private $statisticManager;
 
     /**
-     * @param string $url
-     * @param int    $maxNestedLevel
-     * @param int    $maxProcessedLinks
+     * SiteImagesCountParser constructor.
+     *
+     * @param StatisticManager $statisticManager
      */
-    public function handle(string $url, int $maxProcessedLinks = null, int $maxNestedLevel = self::MAX_NESTED_LEVEL): void
+    public function __construct(StatisticManager $statisticManager)
+    {
+        $this->statisticManager = $statisticManager;
+    }
+
+
+    /**
+     * @param string     $url
+     * @param int | null $maxNestedLevel
+     * @param int | null $maxProcessedLinks
+     */
+    public function handle(string $url, ?int $maxProcessedLinks = null, ?int $maxNestedLevel = null): void
     {
         $this->maxProcessedLinks = $maxProcessedLinks;
+
+        if (!$maxNestedLevel) {
+            $maxNestedLevel = self::MAX_NESTED_LEVEL;
+        }
 
         $startUrl = new LinkSummaryDTO(new UrlType($url), 0);
 
@@ -67,8 +69,8 @@ class SiteImagesCountParser
             $this->process($maxNestedLevel);
         } while (0 !== \count($this->linksForProcessing));
 
-        $this->truncatePreviousDBData();
-        $this->saveData();
+        $this->statisticManager->truncatePreviousData();
+        $this->statisticManager->saveData($this->linksProcessed);
     }
 
     /**
@@ -83,32 +85,28 @@ class SiteImagesCountParser
 
             if ($maxNestedLevel >= $processedLink->getNestedLevel()) {
 
-                try {
-                    $crawler = new Crawler(
-                        file_get_contents(
-                            $processedLink->getUrl(),
-                            false,
-                            stream_context_create(['http' => ['max_redirects' => 0]])
-                        )
-                    );
+                $crawler = new Crawler(
+                    file_get_contents(
+                        $processedLink->getUrl(),
+                        false,
+                        stream_context_create(['http' => ['max_redirects' => 0]])
+                    )
+                );
 
-                    $processedLink->setImagesCount($crawler->filter('img')->count());
-                    $links = $crawler->filter('a');
+                $processedLink->setImagesCount($crawler->filter('img')->count());
+                $links = $crawler->filter('a');
 
-                    /** @var \DOMElement $link */
-                    foreach ($links as $link) {
+                /** @var \DOMElement $link */
+                foreach ($links as $link) {
 
+                    $url = $link->getAttribute('href');
 
-                        $url = $link->getAttribute('href');
-
-                        if (filter_var($url, FILTER_VALIDATE_URL) && !$this->isLinkExistInProcess($url)) {
-                            try {
-                                $this->linksForProcessing[md5($url)] = new LinkSummaryDTO(new UrlType($url), $processedLink->getNestedLevel() + 1);
-                            } catch (\InvalidArgumentException $exception) {
-                            }
+                    if (filter_var($url, FILTER_VALIDATE_URL) && !$this->isLinkExistInProcess($url)) {
+                        try {
+                            $this->linksForProcessing[md5($url)] = new LinkSummaryDTO(new UrlType($url), $processedLink->getNestedLevel() + 1);
+                        } catch (\InvalidArgumentException $exception) {
                         }
                     }
-                } catch (ContextErrorException $exception) {
                 }
             }
 
@@ -126,12 +124,15 @@ class SiteImagesCountParser
 
             if ($this->maxProcessedLinks && \count($this->linksProcessed) === $this->maxProcessedLinks) {
                 $this->linksForProcessing = [];
+
                 break;
             }
         }
     }
 
     /**
+     * Check if link was processed or will be processed
+     *
      * @param string $link
      *
      * @return bool
@@ -145,31 +146,5 @@ class SiteImagesCountParser
         }
 
         return false;
-    }
-
-    /**
-     * Remove old statistic data
-     */
-    private function truncatePreviousDBData(): void
-    {
-        $previousData = $this->entityManager->getRepository(Statistic::class)->findAll();
-
-        foreach ($previousData as $link) {
-            $this->entityManager->remove($link);
-            $this->entityManager->flush();
-        }
-    }
-
-    /**
-     * Save last parse statistic
-     */
-    private function saveData(): void
-    {
-        /** @var LinkSummaryDTO $link */
-        foreach ($this->linksProcessed as $link) {
-            $data = new Statistic($link->getUrl(), $link->getImagesCount(), $link->getParseTime());
-            $this->entityManager->persist($data);
-            $this->entityManager->flush();
-        }
     }
 }

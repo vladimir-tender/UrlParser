@@ -56,7 +56,6 @@ class Statistic
         $this->parseTime = $parseTime;
     }
 
-
     /**
      * Get id.
      *
