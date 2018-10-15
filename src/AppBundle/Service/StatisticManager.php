@@ -32,12 +32,11 @@ class StatisticManager
      */
     public function truncatePreviousData(): void
     {
-        $previousData = $this->entityManager->getRepository(Statistic::class)->findAll();
-
-        foreach ($previousData as $link) {
-            $this->entityManager->remove($link);
-            $this->entityManager->flush();
-        }
+        $this->entityManager->createQueryBuilder()
+            ->delete()
+            ->from(Statistic::class, 's')
+            ->getQuery()
+            ->getResult();
     }
 
     /**
@@ -50,7 +49,7 @@ class StatisticManager
         foreach ($links as $link) {
             $data = new Statistic($link->getUrl(), $link->getImagesCount(), $link->getParseTime());
             $this->entityManager->persist($data);
-            $this->entityManager->flush();
         }
+        $this->entityManager->flush();
     }
 }

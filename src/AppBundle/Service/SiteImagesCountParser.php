@@ -31,6 +31,11 @@ class SiteImagesCountParser
     private $maxProcessedLinks;
 
     /**
+     * @var string
+     */
+    private $imageSearchPattern;
+
+    /**
      * @var StatisticManager
      */
     private $statisticManager;
@@ -44,7 +49,6 @@ class SiteImagesCountParser
     {
         $this->statisticManager = $statisticManager;
     }
-
 
     /**
      * @param string     $url
@@ -61,7 +65,7 @@ class SiteImagesCountParser
 
         $startUrl = new LinkSummaryDTO(new UrlType($url), 0);
 
-        //TODO: parse images only from current domain
+        $this->resolveImageSearchPattern($url);
 
         $this->linksForProcessing[$startUrl->getUrlHash()] = $startUrl;
 
@@ -80,6 +84,7 @@ class SiteImagesCountParser
     {
         /** @var LinkSummaryDTO $link */
         foreach ($this->linksForProcessing as $processedLink) {
+
             $timer = new Stopwatch();
             $timer->start('link_handle');
 
@@ -93,28 +98,23 @@ class SiteImagesCountParser
                     )
                 );
 
-                $processedLink->setImagesCount($crawler->filter('img')->count());
-                $links = $crawler->filter('a');
+                $processedLink->setImagesCount($crawler->filter($this->imageSearchPattern)->count());
+                $links = $crawler->filter('a[href^="http"]')->extract(['href']);
 
-                /** @var \DOMElement $link */
+                /** @var string $link */
                 foreach ($links as $link) {
 
-                    $url = $link->getAttribute('href');
-
-                    if (filter_var($url, FILTER_VALIDATE_URL) && !$this->isLinkExistInProcess($url)) {
+                    if (filter_var($link, FILTER_VALIDATE_URL) && !$this->isLinkExistInProcess($link)) {
                         try {
-                            $this->linksForProcessing[md5($url)] = new LinkSummaryDTO(new UrlType($url), $processedLink->getNestedLevel() + 1);
+                            $this->linksForProcessing[md5($link)] = new LinkSummaryDTO(new UrlType($link), $processedLink->getNestedLevel() + 1);
                         } catch (\InvalidArgumentException $exception) {
                         }
                     }
                 }
             }
 
-            $duration = $timer->stop('link_handle')->getDuration();
-
-            $processedLink->setParseTime($duration);
+            $processedLink->setParseTime($timer->stop('link_handle')->getDuration());
             $timer->reset();
-
 
             unset($this->linksForProcessing[$processedLink->getUrlHash()]);
 
@@ -146,5 +146,21 @@ class SiteImagesCountParser
         }
 
         return false;
+    }
+
+    /**
+     * Ignore images from subdomains, other web-sites
+     *
+     * @param string $url
+     */
+    private function resolveImageSearchPattern(string $url)
+    {
+        $host = parse_url($url, PHP_URL_HOST);
+        $scheme = parse_url($url, PHP_URL_SCHEME);
+
+        $pattern = 'img[src^='.$scheme.'\:\/\/'.$host.'], img[src^='.$scheme.'\:\/\/www.'.$host.'], img[src^=\/]';
+        $pattern = str_replace('.', '\.', $pattern);
+
+        $this->imageSearchPattern = $pattern;
     }
 }

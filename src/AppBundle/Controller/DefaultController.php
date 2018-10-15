@@ -13,8 +13,13 @@ class DefaultController extends Controller
      */
     public function indexAction(): Response
     {
-        $url = 'http://gadget-it.ru/';
-        $this->get('url_parser')->handle($url, 20, 1);
+//        Http example:
+//          $url = 'http://gadget-it.ru/';
+//          $this->get('url_parser')->handle($url, 25, 2);
+
+//        Console example:
+//          php bin/console parse:link 'http://gadget-it.ru/' 12 1
+
         $links = $this->getDoctrine()->getRepository(Statistic::class)->findBy([], ['imgCount' => 'DESC']);
 
         return $this->render('default/index.html.twig', [

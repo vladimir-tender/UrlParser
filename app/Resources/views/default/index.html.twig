@@ -11,34 +11,41 @@
             display: block;
             margin: 0 auto;
         }
+
         table td {
             border: 1px solid gray;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <table cellpadding="7" cellspacing="0">
-            <tr>
-                <th></th>
-                <th>Url</th>
-                <th>Images count</th>
-                <th>Parse time, ms</th>
-            </tr>
+<div class="container">
+    <table cellpadding="7" cellspacing="0">
+        <tr>
+            <th></th>
+            <th>Url</th>
+            <th>Images count</th>
+            <th>Parse time, ms</th>
+        </tr>
 
-        {% for key, link in links %}
+        {% if links | length > 0 %}
+            {% for key, link in links %}
+                <tr>
+                    <td>{{ key + 1 }}</td>
+                    <td>
+                        <a href="{{ link.url }}" target="_blank">
+                            {{ link.url }}
+                        </a>
+                    </td>
+                    <td>{{ link.imgCount }}</td>
+                    <td>{{ link.parseTime }}</td>
+                </tr>
+            {% endfor %}
+        {% else %}
             <tr>
-                <td>{{ key + 1 }}</td>
-                <td>
-                    <a href="{{ link.url }}" target="_blank">
-                    {{ link.url }}
-                    </a>
-                </td>
-                <td>{{ link.imgCount }}</td>
-                <td>{{ link.parseTime }}</td>
+                <td colspan="4" align="center">No data</td>
             </tr>
-        {% endfor %}
-        </table>
-    </div>
+        {% endif %}
+    </table>
+</div>
 </body>
 </html>
