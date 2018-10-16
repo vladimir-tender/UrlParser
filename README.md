@@ -6,7 +6,7 @@ A Symfony project created on October 13, 2018, 7:58 pm.
 Install vendors and confirm parameters.
 
 ```sh
-$ php compose.phar install
+$ php composer.phar install
 ```
 
 Edit /etc/hosts
