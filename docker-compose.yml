@@ -15,9 +15,9 @@ services:
         image: mysql:5.7
         environment:
             MYSQL_ROOT_PASSWORD: 1111
-            MYSQL_DATABASE: '%database_name%'
-            MYSQL_USER: '%database_user%'
-            MYSQL_PASSWORD: '%database_password%'
+            MYSQL_DATABASE: url_parser
+            MYSQL_USER: url_parser
+            MYSQL_PASSWORD: url_parser
         volumes:
             - "./database/origin:/var/lib/mysql"
         ports:
