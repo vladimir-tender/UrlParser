@@ -35,4 +35,4 @@ Check while command finished
 $ Parse finished
 ```
 
-Open "url-parser.local/app_dev.php" (prod enviroment not fixed yet )
+Open "url-parser.local/app_dev.php" (prod environment not fixed yet )
