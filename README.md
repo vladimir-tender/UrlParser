@@ -35,4 +35,10 @@ Check while command finished
 $ Parse finished
 ```
 
-Open "url-parser.local/app_dev.php" (prod environment not fixed yet )
+Open "url-parser.local"
+
+If get http code 500 - try remove cache
+```sh
+$ docker-compose exec php bash
+$ rm -rf var/cache/*
+```
